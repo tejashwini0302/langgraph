@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LangGraph Dev/Test Crew</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; }
+  textarea, input { width: 100%; box-sizing: border-box; padding: 10px; font-size: 14px; }
+  button { padding: 10px 16px; margin-top: 8px; cursor: pointer; }
+  pre { background: #f4f4f4; padding: 12px; white-space: pre-wrap; border-radius: 6px; }
+  .row { margin-bottom: 20px; }
+</style>
+</head>
+<body>
+  <h1>Developer / Tester Crew</h1>
+
+  <div class="row">
+    <label>Task description</label>
+    <textarea id="task" rows="3" placeholder="e.g. Write a function that checks if a string is a palindrome"></textarea>
+    <button onclick="runTask()">Run</button>
+  </div>
+
+  <div class="row" id="results" style="display:none;">
+    <h3>Generated Code</h3>
+    <pre id="code"></pre>
+    <h3>Report</h3>
+    <pre id="report"></pre>
+    <button onclick="storeTask()">Store in archive</button>
+    <span id="storeStatus"></span>
+  </div>
+
+  <script>
+    let lastResult = null;
+
+    async function runTask() {
+      const task = document.getElementById('task').value.trim();
+      if (!task) return alert('Enter a task first.');
+
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('storeStatus').textContent = '';
+
+      const res = await fetch('/api/run_task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        alert('Error: ' + data.error);
+        return;
+      }
+
+      lastResult = data;
+      document.getElementById('code').textContent = data.code || '';
+      document.getElementById('report').textContent = data.report || '';
+      document.getElementById('results').style.display = 'block';
+    }
+
+    async function storeTask() {
+      if (!lastResult) return;
+      const res = await fetch('/api/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lastResult)
+      });
+      const data = await res.json();
+      document.getElementById('storeStatus').textContent = ' Stored (id: ' + data.id + ')';
+    }
+  </script>
+</body>
+</html>
